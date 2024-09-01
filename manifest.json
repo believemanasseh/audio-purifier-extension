@@ -1,0 +1,25 @@
+{
+    "manifest_version": 3,
+    "name": "Audio Purifier",
+    "version": "1.0",
+    "description": "A simple Chrome extension that removes background noise from voice call sessions.",
+    "icons": {
+        "48": "icon.png"
+    },
+    "permissions": [
+        "activeTab",
+        "audio"
+    ],
+    "background": {
+        "service_worker": "worker.js",
+        "type": "module"
+    },
+    "action": {
+        "default_popup": "index.html",
+        "default_icon": "icon.png"
+    },
+    "content_scripts": [{
+        "matches": ["<all_urls>"],
+        "js": ["content.js"]
+    }]
+}
