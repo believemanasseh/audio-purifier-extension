@@ -3,7 +3,10 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
 
   if (message.action === "startPurifying") {
     const audioContext = new AudioContext();
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: true,
+      video: false,
+    });
 
     // Create input and effect audio nodes
     const source = audioContext.createMediaStreamSource(stream);
@@ -23,7 +26,7 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
     let outputData;
 
     socket.onopen = () => {
-      filter.onaudioprocess = async (audioProcessingEvent) => {
+      filter.onaudioprocess = (audioProcessingEvent) => {
         const inputData = audioProcessingEvent.inputBuffer.getChannelData(0);
         outputData = audioProcessingEvent.outputBuffer.getChannelData(0);
         const audioInput = Array.from(inputData);
