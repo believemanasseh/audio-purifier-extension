@@ -2,12 +2,43 @@
 <html>
 
 <head>
+    <title>Audio Purifier</title>
     <script src="index.js" defer></script>
+    <style>
+        :root {
+            background-color: rgb(11, 11, 11);
+        }
+
+        h3 {
+            color: rgb(57, 115, 202);
+        }
+
+        #spectrogram {
+            width: 400px;
+            height: 50px;
+            background-color: rgb(224, 221, 221);
+            border-radius: 12px;
+        }
+
+        #btn {
+            background-color: rgb(57, 115, 202);
+            color: white;
+            border-radius: 12px;
+            border: 1px solid rgb(57, 115, 202);
+            padding: 10px;
+            width: 100%;
+            font-size: 15px;
+            cursor: pointer;
+            font-weight: 600;
+            margin: 10px 0px;
+        }
+    </style>
 </head>
 
 <body>
-    <h1>Hello, welcome to our world!</h1>
-    <button id="btn">Start</button>
+    <h3>Purity for the soul...</h3>
+    <canvas id="spectrogram"></canvas>
+    <button id="btn">START PURIFICATION</button>
 </body>
 
 </html>

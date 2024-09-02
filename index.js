@@ -5,10 +5,10 @@ document.getElementById("btn").addEventListener("click", () => {
 
     if (isPurifying) {
       chrome.tabs.sendMessage(tab.id, { action: "stopPurifying" });
-      button.textContent = "Start Purification";
+      button.textContent = "START PURIFICATION";
     } else {
       chrome.tabs.sendMessage(tab.id, { action: "startPurifying" });
-      button.textContent = "Stop Purification";
+      button.textContent = "STOP PURIFICATION";
     }
 
     localStorage.setItem("isPurifying", !isPurifying);
