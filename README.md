@@ -2,8 +2,6 @@
 
 A simple chrome extension for AI-powered noise suppression.
 
-**Important Note:** While the core functionality of this extension is open-source, the AI model used for denoising resides on a cloud server and is not publicly available.
-
 ## Features
 
 - Reduces background noise from your microphone input.
@@ -24,7 +22,7 @@ A simple chrome extension for AI-powered noise suppression.
 
 ## Technical Details
 
-The extension utilises the Web Audio API to capture audio from your microphone. It then sends the audio data to a cloud-based AI model for denoising. The processed audio is sent back and replaces the original microphone input.
+The extension utilises the Web Audio API to capture audio from your microphone. It then sends the audio data to a self-hosted or cloud-based AI model for denoising. The processed audio is sent back and replaces the original microphone input.
 
 ## License
 
