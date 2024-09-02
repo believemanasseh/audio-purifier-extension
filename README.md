@@ -19,7 +19,7 @@ A simple chrome extension for AI-powered noise suppression.
 ## Usage
 
 - Click on the extension icon in the Chrome toolbar. A popup window will appear.
-- Click the "Start Purification" button. The extension will start processing your microphone input with noise removal. You can monitor the audio spectrum using the spectrogram visualization.
+- Click the "Start Purification" button. The extension will start processing your microphone input with noise removal. You can monitor the audio spectrum using the spectrogram visualisation.
 - Click the "Stop Purification" button to disable noise removal.
 
 ## Technical Details
