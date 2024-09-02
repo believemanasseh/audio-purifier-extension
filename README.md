@@ -1,2 +1,3 @@
-# audio-purifier-extension
-A chrome extension for AI-powered noise suppression.
+# Audio Purifier Extension
+
+A simple chrome extension for AI-powered noise suppression.
