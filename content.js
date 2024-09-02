@@ -1,16 +1,25 @@
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   let socket;
+  let analyser;
+  let dataArray;
 
   if (message.action === "startPurifying") {
     const audioContext = new AudioContext();
+    audioContext.createAnalyser();
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: true,
       video: false,
     });
 
-    // Create input and effect audio nodes
+    // Create input, effect and analyser audio nodes
     const source = audioContext.createMediaStreamSource(stream);
     const filter = audioContext.createBiquadFilter();
+    analyser = audioContext.createAnalyser();
+    analyser.fftSize = 2048;
+    const bufferLength = analyser.frequencyBinCount;
+    dataArray = new Uint8Array(bufferLength);
+
+    visualise();
 
     // Configure Biquad filter
     filter.type = "lowpass";
@@ -20,6 +29,7 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
     // Connect nodes
     source.connect(filter);
     filter.connect(audioContext.destination);
+    analyser.connect(audioContext.destination);
 
     socket = new WebSocket("ws://cloud-api-server");
 
@@ -48,4 +58,25 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   } else if (message.action === "stopPurifying") {
     socket.close();
   }
+
+  const visualise = () => {
+    analyser.getByteFrequencyData(dataArray);
+
+    const canvas = document.getElementById("spectrogram");
+    const canvasCtx = canvas.getContext("2d");
+    canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw spectrogram
+    for (let i = 0; i < dataArray.length; i++) {
+      const barHeight = (dataArray[i] / 255) * canvas.height;
+      const barWidth = canvas.width / dataArray.length;
+      const x = i * barWidth;
+      const y = canvas.height - barHeight;
+
+      canvasCtx.fillStyle = `rgb(${dataArray[i]}, 0, 0)`;
+      canvasCtx.fillRect(x, y, barWidth, barHeight);
+    }
+
+    requestAnimationFrame(visualise);
+  };
 });
