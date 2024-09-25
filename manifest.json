@@ -7,7 +7,9 @@
         "100": "icon.png"
     },
     "permissions": [
-        "activeTab"
+        "activeTab",
+        "tabs",
+        "scripting"
     ],
     "background": {
         "service_worker": "worker.js",
