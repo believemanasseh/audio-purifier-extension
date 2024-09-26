@@ -26,4 +26,4 @@ The extension utilises the Web Audio API to capture audio from your microphone. 
 
 ## License
 
-The extension source code is licensed under the MIT License (see LICENSE).
+The extension source code is licensed under the MIT License (see [LICENSE](LICENSE)).
