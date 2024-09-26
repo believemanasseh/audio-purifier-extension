@@ -6,25 +6,19 @@ chrome.runtime.onInstalled.addListener(() => {
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === "startWebSocketConnection" && !isPurifying) {
+  if (message.action === "startPurifying" && !isPurifying) {
     startWebSocketConnection(sendResponse);
     isPurifying = true;
     sendResponse({ status: "Purification started" });
   }
 
-  if (message.action === "stopWebSocketConnection" && isPurifying) {
+  if (message.action === "stopPurifying" && isPurifying) {
     if (socket) {
       socket.close();
     }
-    sendResponse({ status: "WebSocket stopped" });
-  }
-
-  if (message.type === "content" && message.action === "stopPurifying") {
-    if (isPurifying) {
-      stopPurification();
-      isPurifying = false;
-      sendResponse({ status: "Purification stopped" });
-    }
+    stopPurification();
+    isPurifying = false;
+    sendResponse({ status: "Purification stopped" });
   }
 
   if (

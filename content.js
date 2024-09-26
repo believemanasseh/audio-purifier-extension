@@ -2,13 +2,12 @@ let audioContext;
 let stream;
 
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
-  if (message.type === "popup" && message.action === "startPurifying") {
-    chrome.runtime.sendMessage({ action: "startWebSocketConnection" });
+  if (message.action === "startPurifying") {
     await startPurification();
     sendResponse({ status: "Purification started" });
   }
 
-  if (message.type === "popup" && message.action === "stopPurifying") {
+  if (message.action === "stopPurifying") {
     chrome.runtime.sendMessage({ action: "stopWebSocketConnection" });
     stopPurification();
     sendResponse({ status: "Purification stopped" });

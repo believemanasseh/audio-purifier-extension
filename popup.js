@@ -27,23 +27,17 @@ btn.addEventListener("click", () => {
         files: ["content.js"],
       },
       () => {
-        localStorage.setItem("tabId", tabId);
-
         if (isPurifying) {
           btn.textContent = START_TEXT;
           btn.style.backgroundColor = START_BTN_COLOR;
-          chrome.tabs.sendMessage(tabId, {
-            type: "popup",
-            action: action,
-          });
+          chrome.tabs.sendMessage(tabId, { action: action });
         } else {
           btn.textContent = STOP_TEXT;
           btn.style.backgroundColor = STOP_BTN_COLOR;
-          chrome.tabs.sendMessage(tabId, {
-            type: "popup",
-            action: action,
-          });
+          chrome.tabs.sendMessage(tabId, { action: action });
         }
+
+        localStorage.setItem("tabId", tabId);
       }
     );
   });
