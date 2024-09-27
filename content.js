@@ -3,6 +3,7 @@ let stream;
 
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   if (message.action === "startPurifying") {
+    chrome.runtime.sendMessage({ action: "startWebSocketConnection" });
     await startPurification();
     sendResponse({ status: "Purification started" });
   }
@@ -21,12 +22,14 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
 });
 
 async function startPurification() {
-  audioContext = new AudioContext();
-
-  await audioContext.audioWorklet.addModule("processor.js");
-
   // Get audio stream from the microphone
   stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+  audioContext = new AudioContext();
+
+  const moduleURL = chrome.runtime.getURL("processor.js");
+  await audioContext.audioWorklet.addModule(moduleURL);
+
   const source = audioContext.createMediaStreamSource(stream);
   const filter = audioContext.createBiquadFilter();
 
@@ -40,12 +43,9 @@ async function startPurification() {
   filter.connect(workletNode);
   workletNode.connect(audioContext.destination);
 
-  localStorage.setItem("isPurifying", true);
-
   // Handle messages from the AudioWorkletNode
   workletNode.port.onmessage = (event) => {
     const processedAudio = event.data;
-
     chrome.runtime.sendMessage({
       action: "sendAudioData",
       audioData: processedAudio,
@@ -61,10 +61,6 @@ function stopPurification() {
   if (stream) {
     stream.getTracks().forEach((track) => track.stop());
   }
-
-  localStorage.setItem("isPurifying", false);
-
-  console.log("Purification stopped");
 }
 
 function playProcessedAudio(data) {
