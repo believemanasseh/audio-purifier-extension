@@ -6,19 +6,16 @@ chrome.runtime.onInstalled.addListener(() => {
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === "startPurifying" && !isPurifying) {
+  if (message.action === "startWebSocketConnection" && !isPurifying) {
     startWebSocketConnection(sendResponse);
     isPurifying = true;
-    sendResponse({ status: "Purification started" });
   }
 
-  if (message.action === "stopPurifying" && isPurifying) {
+  if (message.action === "stopWebSocketConnection" && isPurifying) {
     if (socket) {
       socket.close();
+      isPurifying = false;
     }
-    stopPurification();
-    isPurifying = false;
-    sendResponse({ status: "Purification stopped" });
   }
 
   if (
@@ -31,7 +28,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 function startWebSocketConnection(sendResponse) {
-  socket = new WebSocket("ws://cloud-api-server");
+  socket = new WebSocket("wss://echo.websocket.org");
 
   socket.onopen = () => {
     console.log("WebSocket connection opened");
@@ -39,7 +36,6 @@ function startWebSocketConnection(sendResponse) {
 
   socket.onmessage = (event) => {
     const processedAudio = event.data;
-    console.log("Received denoised audio data");
     sendResponse({ action: "playAudio", audioData: processedAudio });
   };
 
