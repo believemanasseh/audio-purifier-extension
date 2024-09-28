@@ -1,5 +1,10 @@
-let audioContext;
-let stream;
+if (typeof audioContext === "undefined") {
+  var audioContext;
+}
+
+if (typeof stream === "undefined") {
+  var stream;
+}
 
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   if (message.action === "startPurifying") {
@@ -10,7 +15,7 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
 
   if (message.action === "stopPurifying") {
     chrome.runtime.sendMessage({ action: "stopWebSocketConnection" });
-    stopPurification();
+    await stopPurification();
     sendResponse({ status: "Purification stopped" });
   }
 
@@ -53,9 +58,9 @@ async function startPurification() {
   };
 }
 
-function stopPurification() {
-  if (audioContext) {
-    audioContext.close();
+async function stopPurification() {
+  if (audioContext.state !== "closed") {
+    await audioContext.close();
   }
 
   if (stream) {
