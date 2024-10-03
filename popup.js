@@ -1,3 +1,5 @@
+const port = chrome.runtime.connect({ name: "popup" });
+
 const START_TEXT = "START PURIFICATION";
 const STOP_TEXT = "STOP PURIFICATION";
 const START_BTN_COLOR = "rgb(57, 115, 202)";
@@ -6,12 +8,6 @@ const STOP_BTN_COLOR = "red";
 let btn;
 
 checkPurificationStatus();
-
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === "visualise") {
-    visualise(message.dataArray, message.bufferLength);
-  }
-});
 
 btn.addEventListener("click", () => {
   chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
@@ -40,6 +36,13 @@ btn.addEventListener("click", () => {
   });
 });
 
+port.onMessage.addListener((message) => {
+  if (message.action === "visualise") {
+    console.log(message.action, message.bufferLength, "damn");
+    visualise(message.dataArray, message.bufferLength);
+  }
+});
+
 function checkPurificationStatus() {
   btn = document.getElementById("btn");
   const isPurifying = localStorage.getItem("isPurifying") === "true";
@@ -57,10 +60,6 @@ function visualise(dataArray, bufferLength) {
 
   if (!isPurifying) return;
 
-  requestAnimationFrame(visualise);
-
-  analyser.getByteFrequencyData(dataArray);
-
   const canvas = document.getElementById("spectrogram");
   const canvasCtx = canvas.getContext("2d");
   const HEIGHT = canvas.height;
@@ -75,8 +74,8 @@ function visualise(dataArray, bufferLength) {
 
   for (let i = 0; i < bufferLength; i++) {
     const barHeight = dataArray[i];
-
-    canvasCtx.fillStyle = "rgb(" + (barHeight + 100) + ",50,50)";
+    const red = barHeight + 100;
+    canvasCtx.fillStyle = `rgb(${red}, 50, 50)`;
     canvasCtx.fillRect(x, HEIGHT - barHeight / 2, barWidth, barHeight / 2);
 
     x += barWidth + 1;

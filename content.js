@@ -51,14 +51,11 @@ async function startPurification(canvas) {
   const workletNode = new AudioWorkletNode(audioContext, "audio-processor");
 
   source.connect(filter);
-  filter.connect(workletNode);
+  filter.connect(analyser);
+  analyser.connect(workletNode);
   workletNode.connect(audioContext.destination);
 
-  chrome.runtime.sendMessage({
-    action: "visualise",
-    dataArray: dataArray,
-    bufferLength: bufferLength,
-  });
+  updateVisualisationData();
 
   // Handle messages from the AudioWorkletNode
   workletNode.port.onmessage = (event) => {
@@ -86,4 +83,14 @@ function playProcessedAudio(data) {
   const url = URL.createObjectURL(blob);
   const audio = new Audio(url);
   audio.play();
+}
+
+function updateVisualisationData() {
+  analyser.getByteFrequencyData(dataArray);
+  chrome.runtime.sendMessage({
+    action: "visualise",
+    dataArray: Array.from(dataArray),
+    bufferLength: bufferLength,
+  });
+  requestAnimationFrame(updateVisualisationData);
 }
