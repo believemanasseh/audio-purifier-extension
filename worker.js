@@ -1,8 +1,25 @@
 let socket = null;
 let isPurifying = false;
+let popupPort = null;
+let visualisationData = { dataArray: [], bufferLength: 0 };
 
-chrome.runtime.onInstalled.addListener(() => {
-  console.log("Background script installed successfully!");
+chrome.runtime.onConnect.addListener((port) => {
+  if (port.name === "popup") {
+    popupPort = port;
+
+    // Send the stored visualisation data to the popup when it opens
+    if (visualisationData.dataArray.length > 0) {
+      popupPort.postMessage({
+        action: "visualise",
+        dataArray: visualisationData.dataArray,
+        bufferLength: visualisationData.bufferLength,
+      });
+    }
+
+    port.onDisconnect.addListener(() => {
+      popupPort = null;
+    });
+  }
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -24,6 +41,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     socket.readyState === WebSocket.OPEN
   ) {
     socket.send(message.audioData);
+  }
+
+  if (message.action === "visualise") {
+    visualisationData = {
+      dataArray: message.dataArray,
+      bufferLength: message.bufferLength,
+    };
+
+    if (popupPort) {
+      popupPort.postMessage({
+        action: "visualise",
+        dataArray: visualisationData.dataArray,
+        bufferLength: visualisationData.bufferLength,
+      });
+    }
   }
 });
 
