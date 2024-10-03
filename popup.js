@@ -2,9 +2,16 @@ const START_TEXT = "START PURIFICATION";
 const STOP_TEXT = "STOP PURIFICATION";
 const START_BTN_COLOR = "rgb(57, 115, 202)";
 const STOP_BTN_COLOR = "red";
+
 let btn;
 
 checkPurificationStatus();
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === "visualise") {
+    visualise(message.dataArray, message.bufferLength);
+  }
+});
 
 btn.addEventListener("click", () => {
   chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
@@ -42,5 +49,36 @@ function checkPurificationStatus() {
   } else {
     btn.textContent = START_TEXT;
     btn.style.backgroundColor = START_BTN_COLOR;
+  }
+}
+
+function visualise(dataArray, bufferLength) {
+  const isPurifying = localStorage.getItem("isPurifying") === "true";
+
+  if (!isPurifying) return;
+
+  requestAnimationFrame(visualise);
+
+  analyser.getByteFrequencyData(dataArray);
+
+  const canvas = document.getElementById("spectrogram");
+  const canvasCtx = canvas.getContext("2d");
+  const HEIGHT = canvas.height;
+  const WIDTH = canvas.width;
+
+  canvasCtx.clearRect(0, 0, WIDTH, HEIGHT);
+  canvasCtx.fillStyle = "rgb(0, 0, 0)";
+  canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
+
+  const barWidth = (WIDTH / bufferLength) * 2.5;
+  let x = 0;
+
+  for (let i = 0; i < bufferLength; i++) {
+    const barHeight = dataArray[i];
+
+    canvasCtx.fillStyle = "rgb(" + (barHeight + 100) + ",50,50)";
+    canvasCtx.fillRect(x, HEIGHT - barHeight / 2, barWidth, barHeight / 2);
+
+    x += barWidth + 1;
   }
 }

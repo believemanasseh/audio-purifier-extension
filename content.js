@@ -26,7 +26,7 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   return true;
 });
 
-async function startPurification() {
+async function startPurification(canvas) {
   // Get audio stream from the microphone
   stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
@@ -54,11 +54,15 @@ async function startPurification() {
   filter.connect(workletNode);
   workletNode.connect(audioContext.destination);
 
+  chrome.runtime.sendMessage({
+    action: "visualise",
+    dataArray: dataArray,
+    bufferLength: bufferLength,
+  });
+
   // Handle messages from the AudioWorkletNode
   workletNode.port.onmessage = (event) => {
     const processedAudio = event.data;
-
-    visualise(); // visualise spectrogram
 
     chrome.runtime.sendMessage({
       action: "sendAudioData",
@@ -82,31 +86,4 @@ function playProcessedAudio(data) {
   const url = URL.createObjectURL(blob);
   const audio = new Audio(url);
   audio.play();
-}
-
-function visualise() {
-  requestAnimationFrame(visualise);
-
-  analyser.getByteFrequencyData(dataArray);
-
-  const canvas = document.getElementById("spectrogram");
-  const canvasCtx = canvas.getContext("2d");
-  const HEIGHT = canvas.height;
-  const WIDTH = canvas.width;
-
-  canvasCtx.clearRect(0, 0, WIDTH, HEIGHT);
-  canvasCtx.fillStyle = "rgb(0, 0, 0)";
-  canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
-
-  const barWidth = (WIDTH / bufferLength) * 2.5;
-  let x = 0;
-
-  for (let i = 0; i < bufferLength; i++) {
-    const barHeight = dataArray[i];
-
-    canvasCtx.fillStyle = "rgb(" + (barHeight + 100) + ",50,50)";
-    canvasCtx.fillRect(x, HEIGHT - barHeight / 2, barWidth, barHeight / 2);
-
-    x += barWidth + 1;
-  }
 }
