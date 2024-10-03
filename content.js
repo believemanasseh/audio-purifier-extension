@@ -53,7 +53,6 @@ async function startPurification(canvas) {
   source.connect(filter);
   filter.connect(analyser);
   analyser.connect(workletNode);
-  workletNode.connect(audioContext.destination);
 
   updateVisualisationData();
 
