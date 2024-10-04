@@ -6,6 +6,8 @@ const START_BTN_COLOR = "rgb(57, 115, 202)";
 const STOP_BTN_COLOR = "red";
 
 let btn;
+let dataArray;
+let bufferLength;
 
 checkPurificationStatus();
 
@@ -38,7 +40,9 @@ btn.addEventListener("click", () => {
 
 port.onMessage.addListener((message) => {
   if (message.action === "visualise") {
-    visualise(message.dataArray, message.bufferLength);
+    dataArray = message.dataArray;
+    bufferLength = message.bufferLength;
+    visualise();
   }
 });
 
@@ -54,7 +58,7 @@ function checkPurificationStatus() {
   }
 }
 
-function visualise(dataArray, bufferLength) {
+function visualise() {
   const isPurifying = localStorage.getItem("isPurifying") === "true";
 
   if (!isPurifying) return;
