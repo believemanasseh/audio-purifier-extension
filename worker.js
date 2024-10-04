@@ -68,7 +68,12 @@ function startWebSocketConnection(sendResponse) {
 
   socket.onmessage = (event) => {
     const processedAudio = event.data;
-    sendResponse({ action: "playAudio", audioData: processedAudio });
+    const denoisedAudio = JSON.parse(processedAudio).denoisedAudio;
+
+    sendResponse({
+      action: "playAudio",
+      audioData: denoisedAudio,
+    });
   };
 
   socket.onerror = (error) => {
