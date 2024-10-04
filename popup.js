@@ -38,7 +38,6 @@ btn.addEventListener("click", () => {
 
 port.onMessage.addListener((message) => {
   if (message.action === "visualise") {
-    console.log(message.action, message.bufferLength, "damn");
     visualise(message.dataArray, message.bufferLength);
   }
 });

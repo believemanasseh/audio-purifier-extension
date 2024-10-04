@@ -60,7 +60,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 function startWebSocketConnection(sendResponse) {
-  socket = new WebSocket("wss://echo.websocket.org");
+  socket = new WebSocket("ws://localhost:8000/ws");
 
   socket.onopen = () => {
     console.log("WebSocket connection opened");
