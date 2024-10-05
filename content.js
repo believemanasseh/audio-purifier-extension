@@ -5,13 +5,17 @@ if (audioContext === "undefined") {
   var dataArray;
   var bufferLength;
   var workletNode;
+  var isPurifying = false;
 }
 
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   if (message.action === "startPurifying") {
-    chrome.runtime.sendMessage({ action: "startWebSocketConnection" });
-    await startPurification();
-    sendResponse({ status: "Purification started" });
+    if (!isPurifying) {
+      isPurifying = true;
+      chrome.runtime.sendMessage({ action: "startWebSocketConnection" });
+      await startPurification();
+      sendResponse({ status: "Purification started" });
+    }
   }
 
   if (message.action === "stopPurifying") {
@@ -35,21 +39,24 @@ async function startPurification() {
     audioContext = new AudioContext();
   }
 
-  const moduleURL = chrome.runtime.getURL("processor.js");
-  await audioContext.audioWorklet.addModule(moduleURL);
-
-  // Create input, effect and analyser audio nodes
+  // Add input audio node
   const source = audioContext.createMediaStreamSource(stream);
 
+  // Add filter audio node
   const filter = audioContext.createBiquadFilter();
   filter.type = "lowpass";
   filter.frequency.setValueAtTime(1000, audioContext.currentTime);
   filter.gain.setValueAtTime(25, audioContext.currentTime);
 
+  // Create analyser audio node
   analyser = audioContext.createAnalyser();
   analyser.fftSize = 256;
   bufferLength = analyser.frequencyBinCount;
   dataArray = new Uint8Array(bufferLength);
+
+  // Load processor module
+  const moduleURL = chrome.runtime.getURL("processor.js");
+  await audioContext.audioWorklet.addModule(moduleURL);
 
   workletNode = new AudioWorkletNode(audioContext, "audio-processor");
 
@@ -81,6 +88,8 @@ async function stopPurification() {
     stream.getTracks().forEach((track) => track.stop());
     stream = null;
   }
+
+  isPurifying = false;
 }
 
 function playProcessedAudio(data) {
