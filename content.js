@@ -1,9 +1,10 @@
-if (typeof audioContext === "undefined") {
+if (audioContext === "undefined") {
   var audioContext;
   var stream;
   var analyser;
   var dataArray;
   var bufferLength;
+  var workletNode;
 }
 
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
@@ -26,11 +27,13 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   return true;
 });
 
-async function startPurification(canvas) {
+async function startPurification() {
   // Get audio stream from the microphone
   stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-  audioContext = new AudioContext();
+  if (!audioContext) {
+    audioContext = new AudioContext();
+  }
 
   const moduleURL = chrome.runtime.getURL("processor.js");
   await audioContext.audioWorklet.addModule(moduleURL);
@@ -48,7 +51,7 @@ async function startPurification(canvas) {
   bufferLength = analyser.frequencyBinCount;
   dataArray = new Uint8Array(bufferLength);
 
-  const workletNode = new AudioWorkletNode(audioContext, "audio-processor");
+  workletNode = new AudioWorkletNode(audioContext, "audio-processor");
 
   source.connect(filter);
   filter.connect(analyser);
@@ -68,12 +71,15 @@ async function startPurification(canvas) {
 }
 
 async function stopPurification() {
-  if (audioContext.state !== "closed") {
+  if (audioContext && audioContext.state !== "closed") {
     await audioContext.close();
+    audioContext = null;
+    workletNode = null;
   }
 
   if (stream) {
     stream.getTracks().forEach((track) => track.stop());
+    stream = null;
   }
 }
 
@@ -85,11 +91,13 @@ function playProcessedAudio(data) {
 }
 
 function updateVisualisationData() {
-  analyser.getByteFrequencyData(dataArray);
-  chrome.runtime.sendMessage({
-    action: "visualise",
-    dataArray: Array.from(dataArray),
-    bufferLength: bufferLength,
-  });
-  requestAnimationFrame(updateVisualisationData);
+  if (analyser) {
+    analyser.getByteFrequencyData(dataArray);
+    chrome.runtime.sendMessage({
+      action: "visualise",
+      dataArray: Array.from(dataArray),
+      bufferLength: bufferLength,
+    });
+    requestAnimationFrame(updateVisualisationData);
+  }
 }
