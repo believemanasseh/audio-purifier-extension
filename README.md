@@ -6,13 +6,43 @@ A simple chrome extension for AI-powered noise suppression.
 
 - Reduces background noise from your microphone input.
 - Provides a real-time spectrogram visualisation of the audio.
+- Uses a FastAPI backend for AI-powered noise removal.
 
-## Installation
+## Repository Structure
+
+This repository consists of two main components:
+
+- `extension/`: The Chrome extension source code.
+- `server/`: A FastAPI backend that powers the AI model for noise suppression.
+
+### Development Setup
+
+#### Chrome Extension
 
 - Download the source code from the repository.
 - Go to chrome://extensions/ in your Chrome browser.
 - Enable "Developer mode" in the top right corner.
 - Click "Load unpacked" and select the downloaded extension folder.
+
+#### FastAPI Server
+
+1.) Navigate to server directory
+
+```bash
+cd server
+```
+
+2.) Install dependencies
+
+```bash
+pipenv install
+```
+
+3.) Start development server
+
+```bash
+fastapi dev src/app.py
+```
 
 ## Usage
 
