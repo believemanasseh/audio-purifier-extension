@@ -69,11 +69,29 @@ async function startPurification() {
   // Handle messages from the AudioWorkletNode
   workletNode.port.onmessage = (event) => {
     const processedAudio = event.data;
-
-    chrome.runtime.sendMessage({
-      action: "sendAudioData",
-      audioData: processedAudio,
+    const audioBuffer = new AudioBuffer({
+      length: processedAudio.length,
+      sampleRate: 44100,
+      numberOfChannels: 1,
     });
+
+    audioBuffer.copyToChannel(processedAudio, 0);
+
+    const wavBlob = window.utils.convertBufferToWav(audioBuffer);
+    const reader = new FileReader();
+
+    reader.onload = (event) => {
+      const arrayBuffer = event.target.result;
+      const base64AudioMessage =
+        window.utils.convertBufferToBase64String(arrayBuffer);
+
+      chrome.runtime.sendMessage({
+        action: "sendAudioData",
+        audioData: base64AudioMessage,
+      });
+    };
+
+    reader.readAsArrayBuffer(wavBlob);
   };
 }
 

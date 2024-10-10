@@ -40,7 +40,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     socket &&
     socket.readyState === WebSocket.OPEN
   ) {
-    socket.send(message.audioData);
+    socket.send(JSON.stringify({ noisy_audio: message.audioData }));
   }
 
   if (message.action === "visualise") {
