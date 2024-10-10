@@ -8,6 +8,7 @@ fastapi = {extras = ["standard"], version = "*"}
 websockets = "*"
 torch = "*"
 torchaudio = "*"
+deepfilternet = "*"
 
 [dev-packages]
 
