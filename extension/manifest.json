@@ -23,10 +23,10 @@
     },
     "content_scripts": [{
         "matches": ["<all_urls>"],
-        "js": ["content.js"]
+        "js": ["utils.js", "content.js"]
     }],
     "web_accessible_resources": [{
-      "resources": ["processor.js"],
-      "matches": ["<all_urls>"]
+      "matches": ["<all_urls>"],
+      "resources": ["processor.js"]
     }]
 }
