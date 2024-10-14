@@ -5,6 +5,7 @@ from df.enhance import enhance, init_df, load_audio, save_audio
 
 
 def encode_wav_to_base64(file_path):
+    """Encodes WAV file to base64 string for transmission to client."""
     with open(file_path, "rb") as audio_file:
         audio_data = audio_file.read()
 
@@ -14,6 +15,7 @@ def encode_wav_to_base64(file_path):
 
 
 def save_base64_as_wav(base64_string, output_filename):
+    """Saves base64 string as WAV file on disk."""
     audio_data = base64.b64decode(base64_string)
 
     current_dir = os.path.dirname(__file__)
@@ -31,6 +33,7 @@ def save_base64_as_wav(base64_string, output_filename):
 
 
 def denoise_audio(data):
+    """Processes raw audio (WAV) and returns denoised audio encoded as base64 string."""
     model, df_state, suffix = init_df(post_filter=True)
 
     output_filename = f"unenhanced_audio_{suffix}.wav"
@@ -41,10 +44,8 @@ def denoise_audio(data):
 
     enhanced = enhance(model, df_state, audio)
 
-    # Save to disk
     save_audio(f"enhanced_audio_{suffix}.wav", enhanced, df_state.sr())
 
-    # Retrieve Base64 string for transmission to client
     denoised_audio = encode_wav_to_base64(output_file_path)
 
     return denoised_audio
