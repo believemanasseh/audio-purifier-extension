@@ -54,6 +54,12 @@ fastapi dev src/app.py
 
 The extension utilises the Web Audio API to capture audio from your microphone. It then sends the audio data to a self-hosted or cloud-based AI model for denoising. The processed audio is sent back and replaces the original microphone input.
 
+## Model Information
+
+The audio purification process utilises the **DeepFilterNet** model consisting of a two-stage architecture, which employs advanced deep filtering techniques for effective noise suppression. DeepFilterNet is designed to enhance audio quality by reducing background noise while preserving the integrity of the primary audio signal.
+
+For more detailed information about the model and its implementation, you can refer to the original paper: [DeepFilterNet: A Low Complexity Speech Enhancement Framework for Full-Band Audio based on Deep Filtering](https://www.researchgate.net/publication/355222096_DeepFilterNet_A_Low_Complexity_Speech_Enhancement_Framework_for_Full-Band_Audio_based_on_Deep_Filtering).
+
 ## License
 
 The extension source code is licensed under the MIT License (see [LICENSE](LICENSE)).
