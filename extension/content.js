@@ -6,6 +6,10 @@ if (audioContext === "undefined") {
   var bufferLength;
   var workletNode;
   var isPurifying = false;
+  var audioChunks = [];
+  var mediaRecorder;
+  var CHUNK_SIZE = 213;
+  var MIME_TYPE = "audio/ogg; codecs=opus";
 }
 
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
@@ -35,14 +39,55 @@ async function startPurification() {
   // Get audio stream from the microphone
   stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-  if (!audioContext) {
-    audioContext = new AudioContext();
+  await createNodes(stream);
+
+  updateVisualisationData();
+}
+
+async function stopPurification() {
+  if (audioContext && audioContext.state !== "closed") {
+    await audioContext.close();
+    audioContext = null;
+    workletNode = null;
   }
 
-  // Add input audio node
+  if (stream) {
+    stream.getTracks().forEach((track) => track.stop());
+    stream = null;
+  }
+
+  mediaRecorder.stop();
+  isPurifying = false;
+  analyser = null;
+}
+
+function playProcessedAudio(data) {
+  const blob = new Blob([data], { type: "audio/wav" });
+  const url = URL.createObjectURL(blob);
+  const audio = new Audio(url);
+  audio.play();
+}
+
+function updateVisualisationData() {
+  if (analyser) {
+    analyser.getByteFrequencyData(dataArray);
+    chrome.runtime.sendMessage({
+      action: "visualise",
+      dataArray: Array.from(dataArray),
+      bufferLength: bufferLength,
+    });
+    requestAnimationFrame(updateVisualisationData);
+  }
+}
+
+async function createNodes(stream) {
+  // Create audio-processing graph
+  audioContext = new AudioContext();
+
+  // Create input audio node
   const source = audioContext.createMediaStreamSource(stream);
 
-  // Add filter audio node
+  // Create filter audio node
   const filter = audioContext.createBiquadFilter();
   filter.type = "lowpass";
   filter.frequency.setValueAtTime(1000, audioContext.currentTime);
@@ -64,19 +109,29 @@ async function startPurification() {
   filter.connect(analyser);
   analyser.connect(workletNode);
 
-  updateVisualisationData();
+  // Fetch media recorder
+  mediaRecorder = await new MediaRecorder(stream, { mimeType: MIME_TYPE });
 
-  // Handle messages from the AudioWorkletNode
-  workletNode.port.onmessage = (event) => {
-    const processedAudio = event.data;
-    const audioBuffer = new AudioBuffer({
-      length: processedAudio.length,
-      sampleRate: 44100,
-      numberOfChannels: 1,
-    });
+  mediaRecorder.ondataavailable = (event) => {
+    if (0 <= event.data.size && event.data.size < CHUNK_SIZE) {
+      chunks.push(event.data);
+      processChunks();
+    }
+  };
 
-    audioBuffer.copyToChannel(processedAudio, 0);
+  mediaRecorder.start(100);
 
+  return workletNode;
+}
+
+async function processChunks(audioContext) {
+  if (audioChunks.length < 1) return;
+
+  const audioBlob = new Blob(audioChunks, { type: MIME_TYPE });
+
+  const buffer = await audioBlob.arrayBuffer();
+
+  audioContext.decodeAudioData(buffer, (audioBuffer) => {
     const wavBlob = window.utils.convertBufferToWav(audioBuffer);
     const reader = new FileReader();
 
@@ -92,39 +147,7 @@ async function startPurification() {
     };
 
     reader.readAsArrayBuffer(wavBlob);
-  };
-}
 
-async function stopPurification() {
-  if (audioContext && audioContext.state !== "closed") {
-    await audioContext.close();
-    audioContext = null;
-    workletNode = null;
-  }
-
-  if (stream) {
-    stream.getTracks().forEach((track) => track.stop());
-    stream = null;
-  }
-
-  isPurifying = false;
-}
-
-function playProcessedAudio(data) {
-  const blob = new Blob([data], { type: "audio/wav" });
-  const url = URL.createObjectURL(blob);
-  const audio = new Audio(url);
-  audio.play();
-}
-
-function updateVisualisationData() {
-  if (analyser) {
-    analyser.getByteFrequencyData(dataArray);
-    chrome.runtime.sendMessage({
-      action: "visualise",
-      dataArray: Array.from(dataArray),
-      bufferLength: bufferLength,
-    });
-    requestAnimationFrame(updateVisualisationData);
-  }
+    audioChunks = [];
+  });
 }
