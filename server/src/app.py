@@ -1,6 +1,6 @@
 from fastapi import FastAPI, WebSocket
 
-from server.src.denoising import denoise_audio
+from src.denoising import denoise_audio
 
 app = FastAPI()
 
