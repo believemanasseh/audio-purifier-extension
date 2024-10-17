@@ -8,7 +8,8 @@ if (audioContext === "undefined") {
   var isPurifying = false;
   var audioChunks = [];
   var mediaRecorder;
-  var CHUNK_SIZE = 213;
+  var CHUNK_DURATION_IN_MS = 100;
+  var FFT_SIZE = 2048;
   var MIME_TYPE = "audio/ogg; codecs=opus";
 }
 
@@ -95,7 +96,7 @@ async function createNodes(stream) {
 
   // Create analyser audio node
   analyser = audioContext.createAnalyser();
-  analyser.fftSize = 256;
+  analyser.fftSize = FFT_SIZE;
   bufferLength = analyser.frequencyBinCount;
   dataArray = new Uint8Array(bufferLength);
 
@@ -113,13 +114,13 @@ async function createNodes(stream) {
   mediaRecorder = await new MediaRecorder(stream, { mimeType: MIME_TYPE });
 
   mediaRecorder.ondataavailable = (event) => {
-    if (0 <= event.data.size && event.data.size < CHUNK_SIZE) {
+    if (event.data.size > 0) {
       chunks.push(event.data);
       processChunks();
     }
   };
 
-  mediaRecorder.start(100);
+  mediaRecorder.start(CHUNK_DURATION_IN_MS);
 
   return workletNode;
 }
