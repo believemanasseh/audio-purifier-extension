@@ -115,7 +115,7 @@ async function createNodes(stream) {
 
   mediaRecorder.ondataavailable = (event) => {
     if (event.data.size > 0) {
-      chunks.push(event.data);
+      audioChunks.push(event.data);
       processChunks();
     }
   };
