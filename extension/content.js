@@ -1,4 +1,4 @@
-if (audioContext === "undefined") {
+if (audioContext === undefined) {
   var audioContext;
   var stream;
   var analyser;
@@ -10,7 +10,7 @@ if (audioContext === "undefined") {
   var mediaRecorder;
   var CHUNK_DURATION_IN_MS = 100;
   var FFT_SIZE = 2048;
-  var MIME_TYPE = "audio/ogg; codecs=opus";
+  var MIME_TYPE = "audio/webm;codecs=opus";
 }
 
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
@@ -96,6 +96,7 @@ async function createNodes(stream) {
 
   // Create analyser audio node
   analyser = audioContext.createAnalyser();
+  console.log(FFT_SIZE, "size");
   analyser.fftSize = FFT_SIZE;
   bufferLength = analyser.frequencyBinCount;
   dataArray = new Uint8Array(bufferLength);

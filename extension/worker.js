@@ -28,11 +28,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     isPurifying = true;
   }
 
-  if (message.action === "stopWebSocketConnection" && isPurifying) {
-    if (socket) {
-      socket.close();
-      isPurifying = false;
-    }
+  if (message.action === "stopWebSocketConnection" && isPurifying && socket) {
+    socket.close();
+    isPurifying = false;
   }
 
   if (
