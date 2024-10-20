@@ -1,5 +1,5 @@
 window.utils = {
-  convertBufferToWav: (audioBuffer) => {
+  convertAudioBufferToWav: (audioBuffer) => {
     const numOfChannels = audioBuffer.numberOfChannels;
     const sampleRate = audioBuffer.sampleRate;
     const dataLength = audioBuffer.length;
@@ -44,7 +44,7 @@ window.utils = {
     }
   },
 
-  convertBufferToBase64String: (buffer) => {
+  convertArrayBufferToBase64String: (buffer) => {
     let binary = "";
     const bytes = new Uint8Array(buffer);
     for (let i = 0; i < bytes.byteLength; i++) {

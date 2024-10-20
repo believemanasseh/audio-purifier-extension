@@ -77,13 +77,13 @@ async function startPurification() {
 
     audioBuffer.copyToChannel(processedAudio, 0);
 
-    const wavBlob = window.utils.convertBufferToWav(audioBuffer);
+    const wavBlob = window.utils.convertAudioBufferToWav(audioBuffer);
     const reader = new FileReader();
 
     reader.onload = (event) => {
       const arrayBuffer = event.target.result;
       const base64AudioMessage =
-        window.utils.convertBufferToBase64String(arrayBuffer);
+        window.utils.convertArrayBufferToBase64String(arrayBuffer);
 
       chrome.runtime.sendMessage({
         action: "sendAudioData",
