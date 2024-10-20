@@ -12,7 +12,7 @@ let bufferLength;
 checkPurificationStatus();
 
 btn.addEventListener("click", () => {
-  chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     const tabId = tabs[0].id;
     const isPurifying = localStorage.getItem("isPurifying") === "true";
     const action = isPurifying ? "stopPurifying" : "startPurifying";
@@ -20,7 +20,7 @@ btn.addEventListener("click", () => {
     chrome.scripting.executeScript(
       {
         target: { tabId: tabId },
-        files: ["content.js"],
+        files: ["utils.js", "content.js"],
       },
       () => {
         if (isPurifying) {

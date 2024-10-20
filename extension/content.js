@@ -6,11 +6,7 @@ if (audioContext === undefined) {
   var bufferLength;
   var workletNode;
   var isPurifying = false;
-  var audioChunks = [];
-  var mediaRecorder;
-  var CHUNK_DURATION_IN_MS = 100;
   var FFT_SIZE = 2048;
-  var MIME_TYPE = "audio/webm;codecs=opus";
 }
 
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
@@ -40,48 +36,6 @@ async function startPurification() {
   // Get audio stream from the microphone
   stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-  await createNodes(stream);
-
-  updateVisualisationData();
-}
-
-async function stopPurification() {
-  if (audioContext && audioContext.state !== "closed") {
-    await audioContext.close();
-    audioContext = null;
-    workletNode = null;
-  }
-
-  if (stream) {
-    stream.getTracks().forEach((track) => track.stop());
-    stream = null;
-  }
-
-  mediaRecorder.stop();
-  isPurifying = false;
-  analyser = null;
-}
-
-function playProcessedAudio(data) {
-  const blob = new Blob([data], { type: "audio/wav" });
-  const url = URL.createObjectURL(blob);
-  const audio = new Audio(url);
-  audio.play();
-}
-
-function updateVisualisationData() {
-  if (analyser) {
-    analyser.getByteFrequencyData(dataArray);
-    chrome.runtime.sendMessage({
-      action: "visualise",
-      dataArray: Array.from(dataArray),
-      bufferLength: bufferLength,
-    });
-    requestAnimationFrame(updateVisualisationData);
-  }
-}
-
-async function createNodes(stream) {
   // Create audio-processing graph
   audioContext = new AudioContext();
 
@@ -96,7 +50,6 @@ async function createNodes(stream) {
 
   // Create analyser audio node
   analyser = audioContext.createAnalyser();
-  console.log(FFT_SIZE, "size");
   analyser.fftSize = FFT_SIZE;
   bufferLength = analyser.frequencyBinCount;
   dataArray = new Uint8Array(bufferLength);
@@ -111,29 +64,19 @@ async function createNodes(stream) {
   filter.connect(analyser);
   analyser.connect(workletNode);
 
-  // Fetch media recorder
-  mediaRecorder = await new MediaRecorder(stream, { mimeType: MIME_TYPE });
+  updateVisualisationData();
 
-  mediaRecorder.ondataavailable = (event) => {
-    if (event.data.size > 0) {
-      audioChunks.push(event.data);
-      processChunks();
-    }
-  };
+  // Handle messages from the AudioWorkletNode
+  workletNode.port.onmessage = (event) => {
+    const processedAudio = event.data;
+    const audioBuffer = new AudioBuffer({
+      length: processedAudio.length,
+      sampleRate: 44100,
+      numberOfChannels: 1,
+    });
 
-  mediaRecorder.start(CHUNK_DURATION_IN_MS);
+    audioBuffer.copyToChannel(processedAudio, 0);
 
-  return workletNode;
-}
-
-async function processChunks(audioContext) {
-  if (audioChunks.length < 1) return;
-
-  const audioBlob = new Blob(audioChunks, { type: MIME_TYPE });
-
-  const buffer = await audioBlob.arrayBuffer();
-
-  audioContext.decodeAudioData(buffer, (audioBuffer) => {
     const wavBlob = window.utils.convertBufferToWav(audioBuffer);
     const reader = new FileReader();
 
@@ -149,7 +92,40 @@ async function processChunks(audioContext) {
     };
 
     reader.readAsArrayBuffer(wavBlob);
+  };
+}
 
-    audioChunks = [];
-  });
+async function stopPurification() {
+  if (audioContext && audioContext.state !== "closed") {
+    await audioContext.close();
+    audioContext = null;
+    workletNode = null;
+  }
+
+  if (stream) {
+    stream.getTracks().forEach((track) => track.stop());
+    stream = null;
+  }
+
+  isPurifying = false;
+  analyser = null;
+}
+
+function playProcessedAudio(data) {
+  const blob = new Blob([data], { type: MIME_TYPE });
+  const url = URL.createObjectURL(blob);
+  const audio = new Audio(url);
+  audio.play();
+}
+
+function updateVisualisationData() {
+  if (analyser) {
+    analyser.getByteFrequencyData(dataArray);
+    chrome.runtime.sendMessage({
+      action: "visualise",
+      dataArray: Array.from(dataArray),
+      bufferLength: bufferLength,
+    });
+    requestAnimationFrame(updateVisualisationData);
+  }
 }
