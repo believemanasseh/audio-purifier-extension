@@ -6,7 +6,12 @@ if (audioContext === undefined) {
   var bufferLength;
   var workletNode;
   var isPurifying = false;
+  var channelCount;
+  var audioChunks = [];
   var FFT_SIZE = 2048;
+  var BATCH_SIZE = 10;
+  var BUFFER_LENGTH = 4800;
+  var SAMPLE_RATE = 48000;
 }
 
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
@@ -36,6 +41,55 @@ async function startPurification() {
   // Get audio stream from the microphone
   stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
+  // Get the audio tracks from the stream
+  const audioTracks = stream.getAudioTracks();
+
+  if (audioTracks.length > 0) {
+    const trackSettings = audioTracks[0].getSettings();
+    channelCount = trackSettings.channelCount || 1; // Use detected channel count or default to 1
+    console.log(`Detected number of channels: ${channelCount}`);
+  }
+
+  await createNodes();
+
+  updateVisualisationData();
+
+  // Handle messages from the AudioWorkletNode
+  workletNode.port.onmessage = (event) => {
+    const channelData = event.data;
+
+    const processedChannels = [];
+    channelData.forEach((channel) => {
+      const processedChannelData = processChannelData(channel);
+      processedChannels.push(processedChannelData);
+    });
+
+    audioChunks.push(processedChannels);
+
+    if (audioChunks.length >= BATCH_SIZE) {
+      processChunks();
+      audioChunks.length = 0;
+    }
+  };
+}
+
+async function stopPurification() {
+  if (audioContext && audioContext.state !== "closed") {
+    await audioContext.close();
+    audioContext = null;
+    workletNode = null;
+  }
+
+  if (stream) {
+    stream.getTracks().forEach((track) => track.stop());
+    stream = null;
+  }
+
+  isPurifying = false;
+  analyser = null;
+}
+
+async function createNodes() {
   // Create audio-processing graph
   audioContext = new AudioContext();
 
@@ -58,57 +112,13 @@ async function startPurification() {
   const moduleURL = chrome.runtime.getURL("processor.js");
   await audioContext.audioWorklet.addModule(moduleURL);
 
-  workletNode = new AudioWorkletNode(audioContext, "audio-processor");
+  workletNode = new AudioWorkletNode(audioContext, "audio-processor", {
+    outputChannelCount: [channelCount],
+  });
 
   source.connect(filter);
   filter.connect(analyser);
   analyser.connect(workletNode);
-
-  updateVisualisationData();
-
-  // Handle messages from the AudioWorkletNode
-  workletNode.port.onmessage = (event) => {
-    const processedAudio = event.data;
-    const audioBuffer = new AudioBuffer({
-      length: processedAudio.length,
-      sampleRate: 44100,
-      numberOfChannels: 1,
-    });
-
-    audioBuffer.copyToChannel(processedAudio, 0);
-
-    const wavBlob = window.utils.convertAudioBufferToWav(audioBuffer);
-    const reader = new FileReader();
-
-    reader.onload = (event) => {
-      const arrayBuffer = event.target.result;
-      const base64AudioMessage =
-        window.utils.convertArrayBufferToBase64String(arrayBuffer);
-
-      chrome.runtime.sendMessage({
-        action: "sendAudioData",
-        audioData: base64AudioMessage,
-      });
-    };
-
-    reader.readAsArrayBuffer(wavBlob);
-  };
-}
-
-async function stopPurification() {
-  if (audioContext && audioContext.state !== "closed") {
-    await audioContext.close();
-    audioContext = null;
-    workletNode = null;
-  }
-
-  if (stream) {
-    stream.getTracks().forEach((track) => track.stop());
-    stream = null;
-  }
-
-  isPurifying = false;
-  analyser = null;
 }
 
 function playProcessedAudio(data) {
@@ -128,4 +138,56 @@ function updateVisualisationData() {
     });
     requestAnimationFrame(updateVisualisationData);
   }
+}
+
+function processChannelData(channelData) {
+  const output = new Float32Array(BUFFER_LENGTH);
+
+  // If incoming channel data is shorter than BUFFER_LENGTH, do zero-padding
+  if (channelData.length < BUFFER_LENGTH) {
+    output.set(channelData);
+  } else {
+    // If it's longer, truncate it
+    output.set(channelData.subarray(0, BUFFER_LENGTH));
+  }
+
+  return output;
+}
+
+function processChunks() {
+  const audioBuffer = new AudioBuffer({
+    length: BUFFER_LENGTH,
+    sampleRate: SAMPLE_RATE,
+    numberOfChannels: channelCount,
+  });
+
+  // Copy each chunk into the AudioBuffer for both channels
+  for (let i = 0; i < audioChunks.length; i++) {
+    const processedChannels = audioChunks[i];
+
+    // Copy each channel into the AudioBuffer
+    for (let channelIndex = 0; channelIndex < channelCount; channelIndex++) {
+      if (processedChannels[channelIndex]) {
+        const channelData = processedChannels[channelIndex];
+        audioBuffer.copyToChannel(channelData, channelIndex);
+      }
+    }
+  }
+
+  const wavBlob = window.utils.convertAudioBufferToWav(audioBuffer);
+
+  const reader = new FileReader();
+
+  reader.onload = (event) => {
+    const arrayBuffer = event.target.result;
+    const base64AudioMessage =
+      window.utils.convertArrayBufferToBase64String(arrayBuffer);
+
+    chrome.runtime.sendMessage({
+      action: "sendAudioData",
+      audioData: base64AudioMessage,
+    });
+  };
+
+  reader.readAsArrayBuffer(wavBlob);
 }
