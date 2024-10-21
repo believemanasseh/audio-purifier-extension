@@ -8,6 +8,7 @@ if (audioContext === undefined) {
   var isPurifying = false;
   var channelCount;
   var audioChunks = [];
+
   var FFT_SIZE = 2048;
   var BATCH_SIZE = 10;
   var BUFFER_LENGTH = 4800;
@@ -143,11 +144,11 @@ function updateVisualisationData() {
 function processChannelData(channelData) {
   const output = new Float32Array(BUFFER_LENGTH);
 
-  // If incoming channel data is shorter than BUFFER_LENGTH, do zero-padding
+  // If incoming channel data is shorter than BUFFER_LENGTH,
+  // do zero-padding. Otherwise, truncate it
   if (channelData.length < BUFFER_LENGTH) {
     output.set(channelData);
   } else {
-    // If it's longer, truncate it
     output.set(channelData.subarray(0, BUFFER_LENGTH));
   }
 
