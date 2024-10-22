@@ -1,6 +1,7 @@
 let socket = null;
 let isPurifying = false;
 let popupPort = null;
+let contentPort = null;
 let visualisationData = { dataArray: [], bufferLength: 0 };
 
 chrome.runtime.onConnect.addListener((port) => {
@@ -8,7 +9,7 @@ chrome.runtime.onConnect.addListener((port) => {
     popupPort = port;
 
     // Send the stored visualisation data to the popup when it opens
-    if (visualisationData.dataArray.length > 0) {
+    if (visualisationData.dataArray.length) {
       popupPort.postMessage({
         action: "visualise",
         dataArray: visualisationData.dataArray,
@@ -16,8 +17,14 @@ chrome.runtime.onConnect.addListener((port) => {
       });
     }
 
-    port.onDisconnect.addListener(() => {
+    popupPort.onDisconnect.addListener(() => {
       popupPort = null;
+    });
+  } else if (port.name === "content") {
+    contentPort = port;
+
+    contentPort.onDisconnect.addListener(() => {
+      contentPort = null;
     });
   }
 });
@@ -26,6 +33,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "startWebSocketConnection" && !isPurifying) {
     startWebSocketConnection(sendResponse);
     isPurifying = true;
+    return true;
   }
 
   if (message.action === "stopWebSocketConnection" && isPurifying && socket) {
@@ -65,13 +73,17 @@ function startWebSocketConnection(sendResponse) {
   };
 
   socket.onmessage = (event) => {
-    const processedAudio = event.data;
-    const denoisedAudio = JSON.parse(processedAudio).denoisedAudio;
+    try {
+      const processedAudio = event.data;
+      const denoisedAudio = JSON.parse(processedAudio).denoisedAudio;
 
-    sendResponse({
-      action: "playAudio",
-      audioData: denoisedAudio,
-    });
+      contentPort.postMessage({
+        action: "playAudio",
+        audioData: denoisedAudio,
+      });
+    } catch (err) {
+      console.log("onMessage Error: ", err);
+    }
   };
 
   socket.onerror = (error) => {

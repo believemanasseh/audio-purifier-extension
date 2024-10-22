@@ -1,19 +1,19 @@
-if (audioContext === undefined) {
-  var audioContext;
-  var stream;
-  var analyser;
-  var dataArray;
-  var bufferLength;
-  var workletNode;
-  var isPurifying = false;
-  var channelCount;
-  var audioChunks = [];
+let port = chrome.runtime.connect({ name: "content" });
 
-  var FFT_SIZE = 2048;
-  var BATCH_SIZE = 10;
-  var BUFFER_LENGTH = 4800;
-  var SAMPLE_RATE = 48000;
-}
+let audioContext;
+let stream;
+let analyser;
+let dataArray;
+let bufferLength;
+let workletNode;
+let channelCount;
+let audioChunks = [];
+let isPurifying = false;
+
+let FFT_SIZE = 2048;
+let BATCH_SIZE = 10;
+let BUFFER_LENGTH = 4800;
+let SAMPLE_RATE = 48000;
 
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   if (message.action === "startPurifying") {
@@ -31,11 +31,13 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
     sendResponse({ status: "Purification stopped" });
   }
 
+  return true;
+});
+
+port.onMessage.addListener((message) => {
   if (message.action === "playAudio") {
     playProcessedAudio(message.audioData);
   }
-
-  return true;
 });
 
 async function startPurification() {
@@ -45,7 +47,7 @@ async function startPurification() {
   // Get the audio tracks from the stream
   const audioTracks = stream.getAudioTracks();
 
-  if (audioTracks.length > 0) {
+  if (audioTracks.length) {
     const trackSettings = audioTracks[0].getSettings();
     channelCount = trackSettings.channelCount || 1; // Use detected channel count or default to 1
     console.log(`Detected number of channels: ${channelCount}`);
@@ -122,11 +124,23 @@ async function createNodes() {
   analyser.connect(workletNode);
 }
 
-function playProcessedAudio(data) {
-  const blob = new Blob([data], { type: MIME_TYPE });
-  const url = URL.createObjectURL(blob);
-  const audio = new Audio(url);
-  audio.play();
+function playProcessedAudio(base64Audio) {
+  // Decode Base64 string to ArrayBuffer
+  const binaryString = window.atob(base64Audio);
+  const len = binaryString.length;
+  const bytes = new Uint8Array(len);
+
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+
+  // Create an AudioBuffer and play it
+  audioContext.decodeAudioData(bytes.buffer, (buffer) => {
+    const source = audioContext.createBufferSource();
+    source.buffer = buffer;
+    source.connect(audioContext.destination); // Connect to speakers
+    source.start(0); // Play immediately
+  });
 }
 
 function updateVisualisationData() {
