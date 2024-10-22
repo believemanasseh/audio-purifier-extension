@@ -1,19 +1,21 @@
-let port = chrome.runtime.connect({ name: "content" });
+if (audioContext === undefined) {
+  var port = chrome.runtime.connect({ name: "content" });
 
-let audioContext;
-let stream;
-let analyser;
-let dataArray;
-let bufferLength;
-let workletNode;
-let channelCount;
-let audioChunks = [];
-let isPurifying = false;
+  var audioContext;
+  var stream;
+  var analyser;
+  var dataArray;
+  var bufferLength;
+  var workletNode;
+  var channelCount;
+  var audioChunks = [];
+  var isPurifying = false;
 
-let FFT_SIZE = 2048;
-let BATCH_SIZE = 10;
-let BUFFER_LENGTH = 4800;
-let SAMPLE_RATE = 48000;
+  var FFT_SIZE = 2048;
+  var BATCH_SIZE = 10;
+  var BUFFER_LENGTH = 4800;
+  var SAMPLE_RATE = 48000;
+}
 
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   if (message.action === "startPurifying") {
