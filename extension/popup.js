@@ -1,5 +1,3 @@
-const port = chrome.runtime.connect({ name: "popup" });
-
 const START_TEXT = "START PURIFICATION";
 const STOP_TEXT = "STOP PURIFICATION";
 const START_BTN_COLOR = "rgb(57, 115, 202)";
@@ -9,34 +7,7 @@ let btn;
 let dataArray;
 let bufferLength;
 
-checkPurificationStatus();
-
-btn.addEventListener("click", () => {
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    const tabId = tabs[0].id;
-    const isPurifying = localStorage.getItem("isPurifying") === "true";
-    const action = isPurifying ? "stopPurifying" : "startPurifying";
-
-    chrome.scripting.executeScript(
-      {
-        target: { tabId: tabId },
-        files: ["utils.js", "content.js"],
-      },
-      () => {
-        if (isPurifying) {
-          btn.textContent = START_TEXT;
-          btn.style.backgroundColor = START_BTN_COLOR;
-          chrome.tabs.sendMessage(tabId, { action: action });
-        } else {
-          btn.textContent = STOP_TEXT;
-          btn.style.backgroundColor = STOP_BTN_COLOR;
-          chrome.tabs.sendMessage(tabId, { action: action });
-        }
-        localStorage.setItem("isPurifying", !isPurifying);
-      }
-    );
-  });
-});
+const port = chrome.runtime.connect({ name: "popup" });
 
 port.onMessage.addListener((message) => {
   if (message.action === "visualise") {
@@ -44,6 +15,37 @@ port.onMessage.addListener((message) => {
     bufferLength = message.bufferLength;
     visualise();
   }
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+  checkPurificationStatus();
+  btn.addEventListener("click", () => {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const activeTab = tabs[0];
+      const isPurifying = localStorage.getItem("isPurifying") === "true";
+      const action = isPurifying ? "stopPurifying" : "startPurifying";
+
+      chrome.scripting.executeScript(
+        {
+          target: { tabId: activeTab.id },
+          files: ["utils.js", "content.js"],
+        },
+        () => {
+          if (isPurifying) {
+            btn.textContent = START_TEXT;
+            btn.style.backgroundColor = START_BTN_COLOR;
+            chrome.tabs.sendMessage(activeTab.id, { action: action });
+          } else {
+            btn.textContent = STOP_TEXT;
+            btn.style.backgroundColor = STOP_BTN_COLOR;
+            chrome.tabs.sendMessage(activeTab.id, { action: action });
+          }
+
+          localStorage.setItem("isPurifying", !isPurifying);
+        }
+      );
+    });
+  });
 });
 
 function checkPurificationStatus() {
