@@ -2,7 +2,7 @@ class AudioProcessor extends AudioWorkletProcessor {
   process(inputs, outputs, parameters) {
     const input = inputs[0];
 
-    if (input.length > 0) {
+    if (input.length) {
       const channelData = [];
 
       for (let channel = 0; channel < input.length; channel++) {
@@ -12,9 +12,9 @@ class AudioProcessor extends AudioWorkletProcessor {
 
       // Send the processed audio data back to the content script
       this.port.postMessage(channelData);
-    }
 
-    return true;
+      return true;
+    }
   }
 }
 
