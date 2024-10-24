@@ -4,23 +4,25 @@ window.utils = {
     const sampleRate = audioBuffer.sampleRate;
     const dataLength = audioBuffer.length;
 
-    const buffer = new ArrayBuffer(44 + dataLength * 2);
+    // Calculate total size of WAV file
+    const byteRate = sampleRate * numOfChannels * 2; // 16 bits = 2 bytes
+    const buffer = new ArrayBuffer(44 + dataLength * numOfChannels * 2);
     const view = new DataView(buffer);
 
     // Write WAV header
     window.utils.writeString(view, 0, "RIFF");
-    view.setUint32(4, 36 + dataLength * 2, true);
+    view.setUint32(4, 36 + dataLength * numOfChannels * 2, true); // Total file size minus 8 bytes for RIFF header
     window.utils.writeString(view, 8, "WAVE");
     window.utils.writeString(view, 12, "fmt ");
-    view.setUint32(16, 16, true);
-    view.setUint16(20, 1, true); // Pulse-Code Modulation
-    view.setUint16(22, numOfChannels, true);
-    view.setUint32(24, sampleRate, true);
-    view.setUint32(28, sampleRate * 2, true); // Byte rate
-    view.setUint16(32, numOfChannels * 2, true); // Block align
-    view.setUint16(34, 16, true); // Bits per sample
+    view.setUint32(16, 16, true); // Subchunk1Size (16 for PCM)
+    view.setUint16(20, 1, true); // AudioFormat (1 for PCM)
+    view.setUint16(22, numOfChannels, true); // Number of Channels
+    view.setUint32(24, sampleRate, true); // Sample Rate
+    view.setUint32(28, byteRate, true); // Byte Rate
+    view.setUint16(32, numOfChannels * 2, true); // Block Align
+    view.setUint16(34, 16, true); // Bits per Sample
     window.utils.writeString(view, 36, "data");
-    view.setUint32(40, dataLength * 2, true);
+    view.setUint32(40, dataLength * numOfChannels * 2, true); // Subchunk2Size
 
     // Write Pulse-Code Modulation samples
     let offset = 44;
