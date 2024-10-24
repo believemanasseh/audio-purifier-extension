@@ -31,9 +31,8 @@ chrome.runtime.onConnect.addListener((port) => {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "startWebSocketConnection" && !isPurifying) {
-    startWebSocketConnection(sendResponse);
+    startWebSocketConnection();
     isPurifying = true;
-    return true;
   }
 
   if (message.action === "stopWebSocketConnection" && isPurifying && socket) {
@@ -65,7 +64,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
-function startWebSocketConnection(sendResponse) {
+function startWebSocketConnection() {
   socket = new WebSocket("ws://localhost:8000/ws");
 
   socket.onopen = () => {
@@ -73,16 +72,14 @@ function startWebSocketConnection(sendResponse) {
   };
 
   socket.onmessage = (event) => {
-    try {
-      const processedAudio = event.data;
-      const denoisedAudio = JSON.parse(processedAudio).denoisedAudio;
+    const processedAudio = event.data;
+    const denoisedAudio = JSON.parse(processedAudio).denoisedAudio;
 
+    if (contentPort) {
       contentPort.postMessage({
         action: "playAudio",
         audioData: denoisedAudio,
       });
-    } catch (err) {
-      console.log("onMessage Error: ", err);
     }
   };
 
