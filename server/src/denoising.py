@@ -18,24 +18,48 @@ def delete_file(file_path: str) -> None:
 
 def encode_wav_to_base64(file_path: str) -> str:
     """Encodes WAV file as base64 string for transmission to client."""
-    with open(file_path, "rb") as audio_file:
-        audio_data = audio_file.read()
+    if not os.path.isfile(file_path):
+        raise FileNotFoundError(f"The file {file_path} does not exist.")
 
-    base64_audio = base64.b64encode(audio_data).decode("utf-8")
+    try:
+        with open(file_path, "rb") as audio_file:
+            audio_data = audio_file.read()
+    except IOError as e:
+        raise IOError(
+            f"An error occurred while reading the file {file_path}: {e}"
+        ) from e
+
+    if not audio_data:
+        raise ValueError("The audio data read from the file is empty.")
+
+    try:
+        base64_audio = base64.b64encode(audio_data).decode("utf-8")
+    except Exception as e:
+        raise RuntimeError(f"Failed to encode audio data to Base64: {e}") from e
 
     return base64_audio
 
 
 def save_base64_as_wav(base64_string: str, output_filename: str) -> str:
     """Saves base64 string as WAV file on disk."""
-    audio_data = base64.b64decode(base64_string)
+    try:
+        audio_data = base64.b64decode(base64_string)
+    except (TypeError, ValueError) as e:
+        raise ValueError("Invalid Base64 string provided.") from e
 
     output_dir = create_dir("wav")
 
     output_file_path = os.path.join(output_dir, output_filename)
 
-    with open(output_file_path, "wb") as wav_file:
-        wav_file.write(audio_data)
+    try:
+        with open(output_file_path, "wb") as wav_file:
+            wav_file.write(audio_data)
+    except FileNotFoundError as e:
+        raise FileNotFoundError(
+            f"Output directory not found: {output_file_path}"
+        ) from e
+    except IOError as e:
+        raise IOError(f"Failed to write to file {output_file_path}: {e}") from e
 
     return output_file_path
 
@@ -63,7 +87,7 @@ def denoise_audio(data: dict) -> str:
     # Encode unenhanced audio to base64 for transmission
     denoised_audio = encode_wav_to_base64(output_file_path)
 
-    # Delete the unenhanced and enhanced files after processing
+    # Delete the (un)enhanced files after processing
     delete_file(output_file_path)
     delete_file(os.path.join(output_dir, enhanced_output_filename))
 
