@@ -24,16 +24,17 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
       chrome.runtime.sendMessage({ action: "startWebSocketConnection" });
       await startPurification();
       sendResponse({ status: "Purification started" });
+      return true;
     }
   }
 
   if (message.action === "stopPurifying") {
+    port.disconnect();
     chrome.runtime.sendMessage({ action: "stopWebSocketConnection" });
     await stopPurification();
     sendResponse({ status: "Purification stopped" });
+    return true;
   }
-
-  return true;
 });
 
 port.onMessage.addListener((message) => {
