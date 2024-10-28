@@ -64,14 +64,14 @@ def save_base64_as_wav(base64_string: str, output_filename: str) -> str:
     return output_file_path
 
 
-def denoise_audio(data: dict) -> str:
+def denoise_audio(data: dict, index: int) -> str:
     """Processes raw audio (WAV) and returns denoised audio
     encoded as base64 string.
     """
     model, df_state, suffix = init_df(post_filter=True)
 
     # Save unenhanced audio
-    output_filename = f"unenhanced_audio_{suffix}.wav"
+    output_filename = f"unenhanced_audio_{suffix}_{index}.wav"
     output_file_path = save_base64_as_wav(data["noisy_audio"], output_filename)
 
     # Load and enhance audio
@@ -79,7 +79,7 @@ def denoise_audio(data: dict) -> str:
     enhanced = enhance(model, df_state, audio)
 
     # Save enhanced audio
-    enhanced_output_filename = f"enhanced_audio_{suffix}.wav"
+    enhanced_output_filename = f"enhanced_audio_{suffix}_{index}.wav"
     output_dir = create_dir("wav-enhanced")
 
     save_audio(enhanced_output_filename, enhanced, df_state.sr(), output_dir)
@@ -88,7 +88,7 @@ def denoise_audio(data: dict) -> str:
     denoised_audio = encode_wav_to_base64(output_file_path)
 
     # Delete the (un)enhanced files after processing
-    delete_file(output_file_path)
-    delete_file(os.path.join(output_dir, enhanced_output_filename))
+    # delete_file(os.path.join(output_dir, unenhanced_filename))
+    # delete_file(os.path.join(output_dir, enhanced_output_filename))
 
     return denoised_audio
