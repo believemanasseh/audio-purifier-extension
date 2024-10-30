@@ -30,12 +30,12 @@ chrome.runtime.onConnect.addListener((port) => {
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === "startWebSocketConnection" && !isPurifying) {
+  if (!isPurifying && message.action === "startWebSocketConnection") {
     startWebSocketConnection();
     isPurifying = true;
   }
 
-  if (message.action === "stopWebSocketConnection" && isPurifying && socket) {
+  if (isPurifying && socket && message.action === "stopWebSocketConnection") {
     socket.close();
     isPurifying = false;
   }

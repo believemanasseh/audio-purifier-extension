@@ -18,14 +18,12 @@ if (audioContext === undefined) {
 }
 
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
-  if (message.action === "startPurifying") {
-    if (!isPurifying) {
-      isPurifying = true;
-      chrome.runtime.sendMessage({ action: "startWebSocketConnection" });
-      await startPurification();
-      sendResponse({ status: "Purification started" });
-      return true;
-    }
+  if (message.action === "startPurifying" && !isPurifying) {
+    isPurifying = true;
+    chrome.runtime.sendMessage({ action: "startWebSocketConnection" });
+    await startPurification();
+    sendResponse({ status: "Purification started" });
+    return true;
   }
 
   if (message.action === "stopPurifying") {
@@ -130,10 +128,9 @@ async function createNodes() {
 function playProcessedAudio(base64Audio) {
   // Decode Base64 string to ArrayBuffer
   const binaryString = window.atob(base64Audio);
-  const len = binaryString.length;
-  const bytes = new Uint8Array(len);
+  const bytes = new Uint8Array(binaryString.length);
 
-  for (let i = 0; i < len; i++) {
+  for (let i = 0; i < binaryString.length; i++) {
     bytes[i] = binaryString.charCodeAt(i);
   }
 
@@ -141,8 +138,8 @@ function playProcessedAudio(base64Audio) {
   audioContext.decodeAudioData(bytes.buffer, (buffer) => {
     const source = audioContext.createBufferSource();
     source.buffer = buffer;
-    source.connect(audioContext.destination); // Connect to speakers
-    source.start(0); // Play immediately
+    source.connect(audioContext.destination);
+    source.start(0);
   });
 }
 

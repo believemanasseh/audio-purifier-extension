@@ -75,6 +75,7 @@ function visualise() {
   canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
 
   const barWidth = (WIDTH / bufferLength) * 2.5;
+
   let x = 0;
 
   for (let i = 0; i < bufferLength; i++) {
