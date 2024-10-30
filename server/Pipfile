@@ -10,6 +10,7 @@ websockets = "*"
 torch = "*"
 torchaudio = "*"
 deepfilternet = "*"
+aiofiles = "*"
 
 [dev-packages]
 
