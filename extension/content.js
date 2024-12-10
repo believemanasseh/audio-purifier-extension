@@ -12,7 +12,7 @@ if (audioContext === undefined) {
   var isPurifying = false;
 
   var FFT_SIZE = 2048;
-  var BATCH_SIZE = 10;
+  var BATCH_SIZE = 1;
   var BUFFER_LENGTH = 4800;
   var SAMPLE_RATE = 48000;
 }
