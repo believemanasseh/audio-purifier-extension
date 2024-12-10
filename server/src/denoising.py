@@ -1,44 +1,44 @@
+import asyncio
 import base64
-import os
+from pathlib import Path
 
-import aiofiles
+import aiofiles.os
 from df.enhance import enhance, init_df, load_audio, save_audio
 
 
-def create_dir(name: str) -> str:
-    current_dir = os.path.dirname(__file__)
-    output_dir = os.path.join(current_dir, name)
-    os.makedirs(output_dir, exist_ok=True)
+async def create_dir(name: str) -> str:
+    current_dir = Path(__file__).parent
+    output_dir = current_dir / name
+    await aiofiles.os.makedirs(output_dir, exist_ok=True)
     return output_dir
 
 
-def delete_file(file_path: str) -> None:
-    if os.path.exists(file_path):
-        os.remove(file_path)
+async def delete_file(file_path: str) -> None:
+    if await aiofiles.os.path.exists(file_path):
+        await aiofiles.os.remove(file_path)
 
 
 async def encode_wav_to_base64(file_path: str) -> str:
     """Encodes WAV file as base64 string for transmission to client."""
-    if not os.path.isfile(file_path):
+    if not await aiofiles.os.path.isfile(file_path):
         raise FileNotFoundError(f"The file {file_path} does not exist.")
 
     try:
         async with aiofiles.open(file_path, "rb") as audio_file:
             audio_data = await audio_file.read()
+
+            if not audio_data:
+                raise ValueError("The audio data read from the file is empty.")
+
+            base64_audio = base64.b64encode(audio_data).decode("utf-8")
+
+            return base64_audio
     except IOError as e:
         raise IOError(
             f"An error occurred while reading the file {file_path}: {e}"
         ) from e
-
-    if not audio_data:
-        raise ValueError("The audio data read from the file is empty.")
-
-    try:
-        base64_audio = base64.b64encode(audio_data).decode("utf-8")
     except Exception as e:
         raise RuntimeError(f"Failed to encode audio data to Base64: {e}") from e
-
-    return base64_audio
 
 
 async def save_base64_as_wav(base64_string: str, output_filename: str) -> str:
@@ -48,8 +48,8 @@ async def save_base64_as_wav(base64_string: str, output_filename: str) -> str:
     except ValueError as e:
         raise ValueError("Invalid Base64 string provided.") from e
 
-    output_dir = create_dir("wav")
-    output_file_path = os.path.join(output_dir, output_filename)
+    output_dir = await create_dir("wav")
+    output_file_path = output_dir / output_filename
 
     try:
         async with aiofiles.open(output_file_path, "wb") as wav_file:
@@ -64,31 +64,31 @@ async def save_base64_as_wav(base64_string: str, output_filename: str) -> str:
     return output_file_path
 
 
-async def denoise_audio(data: dict) -> str:
+async def denoise_audio(data: dict, index: int) -> str:
     """Processes raw audio (WAV) and returns denoised audio
     encoded as base64 string.
     """
     model, df_state, suffix = init_df(post_filter=True)
 
     # Save unenhanced audio
-    output_filename = f"unenhanced_audio_{suffix}.wav"
-    output_file_path = await save_base64_as_wav(data["noisy_audio"], output_filename)
+    unenhanced_file = f"unenhanced_audio_{suffix}{index}.wav"
+    output_file_path = await save_base64_as_wav(data["noisy_audio"], unenhanced_file)
 
     # Load and enhance audio
-    audio, _ = load_audio(output_file_path, sr=df_state.sr())
+    sr_value = df_state.sr()
+    audio, _ = await asyncio.to_thread(load_audio, output_file_path, sr_value)
     enhanced = enhance(model, df_state, audio)
 
     # Save enhanced audio
-    enhanced_output_filename = f"enhanced_audio_{suffix}.wav"
-    output_dir = create_dir("wav-enhanced")
-
-    save_audio(enhanced_output_filename, enhanced, df_state.sr(), output_dir)
+    enhanced_file = f"enhanced_audio_{suffix}{index}.wav"
+    output_dir = await create_dir("wav-enhanced")
+    await asyncio.to_thread(save_audio, enhanced_file, enhanced, sr_value, output_dir)
 
     # Encode unenhanced audio to base64 for transmission
     denoised_audio = await encode_wav_to_base64(output_file_path)
 
     # Delete the (un)enhanced files after processing
-    # delete_file(os.path.join(output_dir, unenhanced_filename))
-    # delete_file(os.path.join(output_dir, enhanced_output_filename))
+    await delete_file(output_dir / unenhanced_file)
+    await delete_file(output_dir / enhanced_file)
 
     return denoised_audio
