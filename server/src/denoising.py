@@ -68,6 +68,7 @@ async def denoise_audio(data: dict, index: int) -> str:
     """Processes raw audio (WAV) and returns denoised audio
     encoded as base64 string.
     """
+
     model, df_state, suffix = init_df(post_filter=True)
 
     # Save unenhanced audio
@@ -77,18 +78,20 @@ async def denoise_audio(data: dict, index: int) -> str:
     # Load and enhance audio
     sr_value = df_state.sr()
     audio, _ = await asyncio.to_thread(load_audio, output_file_path, sr_value)
-    enhanced = enhance(model, df_state, audio)
+    enhanced_audio = await asyncio.to_thread(enhance, model, df_state, audio)
 
-    # Save enhanced audio
+    # Save enhanced_audio audio
     enhanced_file = f"enhanced_audio_{suffix}{index}.wav"
     output_dir = await create_dir("wav-enhanced")
-    await asyncio.to_thread(save_audio, enhanced_file, enhanced, sr_value, output_dir)
+    await asyncio.to_thread(
+        save_audio, enhanced_file, enhanced_audio, sr_value, output_dir
+    )
 
     # Encode unenhanced audio to base64 for transmission
     denoised_audio = await encode_wav_to_base64(output_file_path)
 
     # Delete the (un)enhanced files after processing
-    await delete_file(output_dir / unenhanced_file)
+    await delete_file(output_file_path)
     await delete_file(output_dir / enhanced_file)
 
     return denoised_audio
