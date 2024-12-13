@@ -96,7 +96,6 @@ async function stopPurification() {
 async function createNodes() {
   // Create audio-processing graph
   audioContext = new AudioContext();
-  console.log(audioContext, "sdns");
 
   // Create input audio node
   const source = audioContext.createMediaStreamSource(stream);
