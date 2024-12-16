@@ -87,8 +87,8 @@ async def denoise_audio(data: dict, index: int) -> str:
         save_audio, enhanced_file, enhanced_audio, sr_value, output_dir
     )
 
-    # Encode unenhanced audio to base64 for transmission
-    denoised_audio = await encode_wav_to_base64(output_file_path)
+    # Encode enhanced audio to base64 for transmission
+    denoised_audio = await encode_wav_to_base64(output_dir / enhanced_file)
 
     # Delete the (un)enhanced files after processing
     await delete_file(output_file_path)
