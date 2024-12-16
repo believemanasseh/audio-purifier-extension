@@ -32,39 +32,37 @@ chrome.runtime.onConnect.addListener((port) => {
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  switch (message.action) {
-    case "startWebSocketConnection":
-      if (!isPurifying) {
-        startWebSocketConnection();
-        isPurifying = true;
-      }
-      break;
-    case "stopWebSocketConnection":
-      if (isPurifying && socket) {
-        socket.close();
-        isPurifying = false;
-      }
-      break;
-    case "sendAudioData":
-      if (socket && socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({ noisy_audio: message.audioData }));
-      }
-    case "visualise":
-      visualisationData = {
-        dataArray: message.dataArray,
-        bufferLength: message.bufferLength,
-      };
+  if (!isPurifying && message.action === "startWebSocketConnection") {
+    startWebSocketConnection();
+    isPurifying = true;
+  }
 
-      if (popupPort) {
-        popupPort.postMessage({
-          action: "visualise",
-          dataArray: visualisationData.dataArray,
-          bufferLength: visualisationData.bufferLength,
-        });
-      }
-      break;
-    default:
-      console.log("Invalid message");
+  if (isPurifying && socket && message.action === "stopWebSocketConnection") {
+    socket.close();
+    isPurifying = false;
+  }
+
+  if (
+    message.action === "sendAudioData" &&
+    socket &&
+    socket.readyState === WebSocket.OPEN
+  ) {
+    socket.send(JSON.stringify({ noisy_audio: message.audioData }));
+  }
+
+  if (message.action === "visualise") {
+    visualisationData = {
+      dataArray: message.dataArray,
+      bufferLength: message.bufferLength,
+    };
+
+    if (popupPort) {
+      popupPort.postMessage({
+        action: "visualise",
+        dataArray: visualisationData.dataArray,
+        bufferLength: visualisationData.bufferLength,
+      });
+    }
   }
 });
 
