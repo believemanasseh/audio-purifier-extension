@@ -135,14 +135,14 @@ function playProcessedAudio(base64Audio) {
   }
 
   // Create an AudioBuffer and play it
-  if (audioContext) {
-    audioContext.decodeAudioData(bytes.buffer, (buffer) => {
+  audioContext.decodeAudioData(bytes.buffer, (buffer) => {
+    if (audioContext) {
       const source = audioContext.createBufferSource();
       source.buffer = buffer;
       source.connect(audioContext.destination);
       source.start(0);
-    });
-  }
+    }
+  });
 }
 
 function updateVisualisationData() {
